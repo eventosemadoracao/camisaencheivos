@@ -398,7 +398,7 @@ const vendidos=k=>0;
 const produzido=k=>{const[l,s]=k.split("|");return lineById(l).est[s]||0;};
 const resta=k=>(DISP?(DISP[k]??0):produzido(k))-(sel[k]||0);
 function carregarEstoque(){
-  return fetch(API+"?acao=estoque").then(r=>r.json()).then(j=>{if(!j.ok)return;DISP=j.disponivel;ABERTA=j.aberta;FIM=new Date(j.fim);PAGBANK=!!j.pagbank;PIXDIRETO=j.pixDireto!==false;modoPagamento();
+  return fetch(API+"?acao=estoque").then(r=>r.json()).then(j=>{if(!j.ok)return;DISP=j.disponivel;ABERTA=j.aberta;FIM=new Date(j.fim);PAGBANK=!!j.pagbank;PIXDIRETO=!j.pagbank;modoPagamento();
     Object.keys(sel).forEach(k=>{const d=DISP[k]??0;if(sel[k]>d){if(d>0)sel[k]=d;else delete sel[k];}});
     renderHero();renderLists();renderBar();}).catch(()=>{});
 }
