@@ -20,6 +20,7 @@
   color-scheme:light;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-weight:300;font-size:18px;line-height:1.65;margin:0;-webkit-font-smoothing:antialiased}
 b,strong{font-weight:500}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -132,6 +133,13 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid
 .titular b{color:var(--ink);font-weight:500;word-break:break-all}
 .retomar{margin-top:24px;padding:16px;border-radius:16px;border:2px solid var(--flame);background:var(--surface);display:grid;gap:12px;text-align:center}
 .retomar b{font-weight:500}
+.pb{margin-top:18px;display:grid;gap:10px}.pb a.btn{display:grid;place-items:center;text-decoration:none;min-height:64px;font-size:21px}
+.pb p{margin:0;font-size:16px;color:var(--muted)}.pb p b{color:var(--ink);font-weight:500}
+.ou{margin:26px 0 0;font-size:16px;color:var(--muted);text-align:center;border-top:1px solid var(--line);padding-top:18px}
+.pagook{margin-top:22px;padding:22px;border-radius:16px;background:color-mix(in srgb,var(--ok) 12%,var(--surface));border:1px solid var(--ok);display:grid;gap:8px;text-align:center}
+.pagook b{font-size:24px;font-weight:400;color:var(--ok)}.pagook p{margin:0}
+.confirmando{margin-top:22px;padding:18px;border-radius:16px;background:var(--soft);text-align:center;display:grid;gap:4px}
+.confirmando b{font-weight:500}.confirmando p{margin:0;color:var(--muted);font-size:16px}
 .hint{font-size:16px;color:var(--muted)}
 .sizes{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:10px}
 .sz{position:relative;height:56px;border:1px solid var(--line);background:var(--surface);border-radius:14px;font-size:20px;font-weight:400;letter-spacing:.02em;transition:background .15s,border-color .15s}
@@ -277,7 +285,13 @@ table.mx{border-collapse:collapse;width:100%;font-size:16px;font-variant-numeric
     <p style="margin:0">Valor a pagar: <b id="o-val" style="color:var(--gold)">R$ 139,80</b></p>
   </div>
   <div id="live">
-    <div class="timer" id="timer"><span>Tempo para pagar e enviar o comprovante</span><b id="t-left">30:00</b></div>
+    <div class="timer" id="timer"><span id="t-lbl">Tempo para pagar e enviar o comprovante</span><b id="t-left">30:00</b></div>
+    <div class="pb" id="pb-box" hidden>
+      <a class="btn full" id="pb-btn" href="#">Pagar agora: Pix ou cartão</a>
+      <p>Você vai para a página segura da <b>PagBank</b>: Pix na hora ou cartão em até 3x. Depois de pagar, você volta para cá e a confirmação é automática. Não precisa mandar comprovante.</p>
+    </div>
+    <p class="ou" id="ou" hidden>Ou, se preferir, pague com Pix direto pela chave e envie o comprovante:</p>
+    <div id="manual">
     <div class="alerta"><b>Atenção:</b> seu pedido só é confirmado depois que você <b>enviar o comprovante no WhatsApp</b>. Sem o comprovante, o pedido é cancelado quando o tempo acabar e as camisas voltam para a venda.</div>
     <ol class="paysteps">
       <li><p>Toque no botão para copiar o código do Pix.</p><div class="key" id="key"></div><button class="btn gold full" id="copy">Copiar código Pix</button></li>
@@ -285,11 +299,17 @@ table.mx{border-collapse:collapse;width:100%;font-size:16px;font-variant-numeric
       <li class="obrig"><p><b>Obrigatório:</b> envie a foto do comprovante no WhatsApp. A mensagem já vai pronta com o número do seu pedido, é só anexar a foto.</p><a class="btn full" id="zapbtn" href="#" target="_blank" rel="noopener">Enviar comprovante no WhatsApp</a><div class="zap">(83) 9 9166-0374</div></li>
     </ol>
     <p class="sent" id="sent" hidden>Obrigado! Assim que conferirmos o pagamento, confirmamos seu pedido pelo WhatsApp. A camisa é entregue no retiro.</p>
-    <div class="cartao">
+    </div>
+    <div class="cartao" id="cartao-box">
       <p><b>Prefere pagar no cartão de crédito?</b><br>O pagamento com cartão é feito com a organização, pelo WhatsApp. Envie a mensagem dentro do mesmo prazo de 30 minutos.</p>
       <a class="btn ghost full" id="cardbtn" href="#" target="_blank" rel="noopener">Pagar no cartão pelo WhatsApp</a>
     </div>
   </div>
+  <div class="pagook" id="pago-ok" hidden>
+    <b>Pagamento confirmado!</b>
+    <p>Obrigado! Seu pedido <b id="pok-num">nº 101</b> está garantido. Guarde este número: a camisa é entregue no retiro.</p>
+  </div>
+  <div class="confirmando" id="confirmando" hidden><b>Confirmando seu pagamento...</b><p>Isso leva alguns segundos. Não feche esta página.</p></div>
   <div class="expirou" id="expired" hidden>
     <b>O tempo acabou.</b>
     <p>Como o comprovante não chegou em 30 minutos, este pedido foi cancelado e as camisas voltaram para a venda. Se você já pagou, fale com a gente no WhatsApp agora mesmo, com o número do pedido.</p>
@@ -360,7 +380,7 @@ let sel={};            // carrinho: "linha|tam" -> qtd
 let orders=[];         // pedidos registrados
 let nextId=101;
 const API="https://script.google.com/macros/s/AKfycbwsYPb9fCTtZpD8ojnBYCUc0OeXMMb2A4OEhyN9imZTcuA9kcgz5lXCJC8q7osPiIz3Fg/exec";
-let DISP=null,ABERTA=true,FIM=new Date("2026-10-15T00:00:00-03:00");
+let PAGBANK=false,PIXDIRETO=true,DISP=null,ABERTA=true,FIM=new Date("2026-10-15T00:00:00-03:00");
 const RESERVA=30*60*1000;let simFim=false;
 const encerrada=()=>simFim||!ABERTA||Date.now()>=FIM.getTime();
 const expirado=o=>o.status==="pendente"&&Date.now()>=o.exp;
@@ -368,7 +388,7 @@ const vendidos=k=>0;
 const produzido=k=>{const[l,s]=k.split("|");return lineById(l).est[s]||0;};
 const resta=k=>(DISP?(DISP[k]??0):produzido(k))-(sel[k]||0);
 function carregarEstoque(){
-  return fetch(API+"?acao=estoque").then(r=>r.json()).then(j=>{if(!j.ok)return;DISP=j.disponivel;ABERTA=j.aberta;FIM=new Date(j.fim);
+  return fetch(API+"?acao=estoque").then(r=>r.json()).then(j=>{if(!j.ok)return;DISP=j.disponivel;ABERTA=j.aberta;FIM=new Date(j.fim);PAGBANK=!!j.pagbank;PIXDIRETO=j.pixDireto!==false;modoPagamento();
     Object.keys(sel).forEach(k=>{const d=DISP[k]??0;if(sel[k]>d){if(d>0)sel[k]=d;else delete sel[k];}});
     renderHero();renderLists();renderBar();}).catch(()=>{});
 }
@@ -483,6 +503,21 @@ $("f").onsubmit=e=>{
 function crc16(s){let c=0xFFFF;for(let i=0;i<s.length;i++){c^=s.charCodeAt(i)<<8;for(let j=0;j<8;j++)c=(c&0x8000)?((c<<1)^0x1021)&0xFFFF:(c<<1)&0xFFFF;}return c.toString(16).toUpperCase().padStart(4,"0");}
 const emv=(id,v)=>id+String(v.length).padStart(2,"0")+v;
 function pixCode(valor,txid){const p=emv("00","01")+emv("26",emv("00","br.gov.bcb.pix")+emv("01","eventos@emadoracao.org"))+emv("52","0000")+emv("53","986")+emv("54",valor.toFixed(2))+emv("58","BR")+emv("59","EM ADORACAO")+emv("60","JOAO PESSOA")+emv("62",emv("05",txid))+"6304";return p+crc16(p);}
+function modoPagamento(){
+  $("pb-box").hidden=!PAGBANK;$("ou").hidden=!(PAGBANK&&PIXDIRETO);
+  $("manual").hidden=PAGBANK&&!PIXDIRETO;$("cartao-box").hidden=PAGBANK;
+  $("t-lbl").textContent=PAGBANK?"Tempo para concluir o pagamento":"Tempo para pagar e enviar o comprovante";
+}
+$("pb-btn").onclick=e=>{
+  e.preventDefault();if(!cur)return;const b=$("pb-btn");b.textContent="Abrindo a PagBank...";b.style.pointerEvents="none";
+  const volta=()=>{b.textContent="Pagar agora: Pix ou cartão";b.style.pointerEvents="";};
+  fetch(API+"?acao=checkout&id="+cur.id).then(r=>r.json()).then(j=>{
+    if(j.ok&&j.url){location.href=j.url;return;}
+    volta();
+    if(j.erro==="status"){consultarStatus();toast("Este pedido já foi atualizado.");}
+    else toast(PIXDIRETO?"A PagBank não respondeu. Tente de novo ou use o Pix direto.":"A PagBank não respondeu. Tente de novo em instantes.");
+  }).catch(()=>{volta();toast("Sem conexão. Confira a internet e tente de novo.");});
+};
 function openPay(o){
   cur=o;const tot=Number(o.valor),val=brl(tot);
   $("key").textContent=pixCode(tot,"ENCHEIVOS"+o.id);
@@ -496,7 +531,10 @@ function openPay(o){
 function tickPay(){
   if(!cur||$("v-pagar").hidden)return;
   const exp=expirado(cur);$("live").hidden=exp;$("expired").hidden=!exp;
-  if(cur.status!=="pendente"){$("t-left").textContent="Comprovante recebido";$("timer").classList.add("okk");return;}
+  $("pago-ok").hidden=cur.status!=="pago";$("confirmando").hidden=!(cur.voltou&&cur.status==="pendente"&&!exp);
+  if(cur.status==="pago"){$("live").hidden=true;$("expired").hidden=true;$("pok-num").textContent="nº "+cur.id;return;}
+  if(cur.voltou&&cur.status==="pendente"){$("live").hidden=true;}
+  if(cur.status!=="pendente"){$("t-left").textContent=cur.status==="analise"?"Pagamento em análise":"Comprovante recebido";$("timer").classList.add("okk");return;}
   $("timer").classList.remove("okk");
   const r=Math.max(0,cur.exp-Date.now()),m=Math.floor(r/60000),ss=Math.floor(r%60000/1000);
   $("t-left").textContent=`${String(m).padStart(2,"0")}:${String(ss).padStart(2,"0")}`;
@@ -507,12 +545,24 @@ function consultarStatus(){
   if(!cur)return;
   fetch(API+"?acao=status&id="+cur.id).then(r=>r.json()).then(j=>{
     if(!j.ok)return;
-    if(j.status==="Expirado"||j.status==="Cancelado"){cur.status="pendente";cur.exp=0;esquecer();}
-    else if(j.status!=="Aguardando"){cur.status="comprovante";esquecer();}
+    if(j.valor!=null&&!cur.valor)cur.valor=j.valor;
+    if(j.status==="Expirado"||j.status==="Cancelado"){cur.status="pendente";cur.exp=0;cur.voltou=false;esquecer();}
+    else if(j.status==="Pago"||j.status==="Entregue"){cur.status="pago";cur.voltou=false;esquecer();}
+    else if(j.status==="Em análise (PagBank)"){cur.status="analise";cur.voltou=false;}
+    else if(j.status==="Comprovante recebido"){cur.status="comprovante";esquecer();}
     tickPay();renderRetomar();
   }).catch(()=>{});
 }
 setInterval(consultarStatus,30000);
+function retornoPagBank(){
+  let id=null;try{id=Number(new URLSearchParams(location.search).get("pedido"));}catch(e){}
+  if(!id)return;
+  try{history.replaceState(null,"",location.pathname);}catch(e){}
+  const salvo=lembrado();
+  const o=(salvo&&salvo.id===id)?salvo:{id,nome:"",status:"pendente",exp:Date.now()+30*60e3,valor:0};
+  o.voltou=true;openPay(o);consultarStatus();
+  let n=0;const t=setInterval(()=>{n++;if(!cur||cur.status!=="pendente"||n>45){clearInterval(t);if(cur&&cur.status==="pendente"){cur.voltou=false;tickPay();}return;}consultarStatus();},4000);
+}
 function renderRetomar(){
   const o=lembrado(),box=$("retomar");if(!box)return;
   const ativo=o&&o.exp>Date.now();
@@ -553,7 +603,7 @@ $("sim-fim").onclick=()=>{simFim=!simFim;$("sim-fim").textContent=simFim?"Voltar
 setInterval(()=>{renderHero();renderLists();renderPanel();renderBar();},30000);
 $("back-p").onclick=()=>show("loja");
 
-renderHero();renderLists();renderBar();carregarEstoque();renderRetomar();setInterval(carregarEstoque,60000);
+renderHero();renderLists();renderBar();carregarEstoque();renderRetomar();retornoPagBank();setInterval(carregarEstoque,60000);
 
 </script>
 
