@@ -144,6 +144,8 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid
 .meupedido .mp-t{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .linkbtn{display:block;margin:16px auto 0;border:0;background:none;color:var(--muted);font-size:15px;text-decoration:underline;text-underline-offset:3px}
 .pend-itens{color:var(--ink)!important;font-size:16px}
+.dica{font-size:14px;color:var(--muted)}
+#c-zap.okz{border-color:var(--ok)}
 .hint{font-size:16px;color:var(--muted)}
 .sizes{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:10px}
 .sz{position:relative;height:56px;border:1px solid var(--line);background:var(--surface);border-radius:14px;font-size:20px;font-weight:400;letter-spacing:.02em;transition:background .15s,border-color .15s}
@@ -272,7 +274,7 @@ table.mx{border-collapse:collapse;width:100%;font-size:16px;font-variant-numeric
   <div class="summary" id="sum"></div>
   <form id="f" novalidate>
     <div class="field"><label for="c-nome">Seu nome</label><input id="c-nome" autocomplete="name" placeholder="Ex.: Maria da Silva"></div>
-    <div class="field"><label for="c-zap">Seu WhatsApp</label><input id="c-zap" inputmode="tel" autocomplete="tel" placeholder="(83) 9 9999-9999"></div>
+    <div class="field"><label for="c-zap">Seu WhatsApp</label><input id="c-zap" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="16" placeholder="(83) 9 9999-9999"><span class="dica" id="zap-dica">DDD + número do celular, com o 9 na frente</span></div>
     <div class="formas" id="formas"><b>Como pagar:</b> Pix, na próxima tela, ou cartão de crédito, pelo WhatsApp da organização. Depois do pedido você terá <b>30 minutos</b> para pagar e enviar o comprovante.</div>
     <p class="err" id="err" hidden></p>
     <div class="dup" id="dup" hidden></div>
@@ -469,15 +471,23 @@ $("continuar").onclick=()=>{
 };
 $("back1").onclick=()=>show("loja");
 
+function mascaraZap(v){let d=v.replace(/\D/g,"");if(d.length>11&&d.startsWith("55"))d=d.slice(2);d=d.slice(0,11);
+  if(d.length<=2)return d.length?"("+d:"";if(d.length<=3)return "("+d.slice(0,2)+") "+d.slice(2);
+  if(d.length<=7)return "("+d.slice(0,2)+") "+d.slice(2,3)+" "+d.slice(3);
+  return "("+d.slice(0,2)+") "+d.slice(2,3)+" "+d.slice(3,7)+"-"+d.slice(7);}
+function celularOk(v){const d=soDig(v);return d.length===11&&/^[1-9][1-9]9\d{8}$/.test(d);}
 const soDig=v=>v.replace(/\D/g,"").replace(/^55(?=\d{10,11}$)/,"");
 const mesmaCompra=(a,b)=>JSON.stringify(a.map(i=>i.k+"x"+i.q).sort())===JSON.stringify(b.map(i=>i.k+"x"+i.q).sort());
 let forcarNovo=false,cur=null;
+$("c-zap").addEventListener("input",e=>{const el=e.target;el.value=mascaraZap(el.value);
+  const d=soDig(el.value);el.classList.toggle("okz",celularOk(el.value));
+  $("zap-dica").textContent=d.length===11&&!celularOk(el.value)?"Celular precisa ter o 9 depois do DDD":"DDD + número do celular, com o 9 na frente";});
 $("f").onsubmit=e=>{
   e.preventDefault();
   const nome=$("c-nome").value.trim(),zap=$("c-zap").value.trim(),err=$("err"),dup=$("dup"),go=$("go");
   err.hidden=true;dup.hidden=true;
   if(nome.length<3){err.textContent="Escreva seu nome, para acharmos seu pedido na entrega.";err.hidden=false;$("c-nome").focus();return;}
-  if(soDig(zap).length<10){err.textContent="Escreva seu WhatsApp com o DDD, por exemplo (83) 9 9999-9999.";err.hidden=false;$("c-zap").focus();return;}
+  if(!celularOk(zap)){err.textContent="Confira o WhatsApp: são 11 números, com DDD e o 9 na frente, por exemplo (83) 9 9999-9999.";err.hidden=false;$("c-zap").focus();return;}
   if(encerrada()){toast("A pré-venda foi encerrada em 14/10");show("loja");return;}
   const itens=Object.entries(sel).map(([k,q])=>({k,q}));
   go.disabled=true;go.textContent="Registrando seu pedido...";
