@@ -528,7 +528,7 @@ $("pb-btn").onclick=e=>{
     if(j.ok&&j.url){location.href=j.url;return;}
     volta();
     if(j.erro==="status"){consultarStatus();toast("Este pedido já foi atualizado.");}
-    else toast(PIXDIRETO?"A PagBank não respondeu. Tente de novo ou use o Pix direto.":"A PagBank não respondeu. Tente de novo em instantes.");
+    else toast("Não foi possível abrir o pagamento agora"+(j.detalhe?" (código "+j.detalhe+")":"")+". Tente de novo em instantes ou fale no WhatsApp.");
   }).catch(()=>{volta();toast("Sem conexão. Confira a internet e tente de novo.");});
 };
 function renderMeuPedido(){
