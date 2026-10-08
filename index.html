@@ -269,7 +269,7 @@ table.mx{border-collapse:collapse;width:100%;font-size:16px;font-variant-numeric
   <form id="f" novalidate>
     <div class="field"><label for="c-nome">Seu nome</label><input id="c-nome" autocomplete="name" placeholder="Ex.: Maria da Silva"></div>
     <div class="field"><label for="c-zap">Seu WhatsApp</label><input id="c-zap" inputmode="tel" autocomplete="tel" placeholder="(83) 9 9999-9999"></div>
-    <div class="formas"><b>Como pagar:</b> Pix, na próxima tela, ou cartão de crédito, pelo WhatsApp da organização. Depois do pedido você terá <b>30 minutos</b> para pagar e enviar o comprovante.</div>
+    <div class="formas" id="formas"><b>Como pagar:</b> Pix, na próxima tela, ou cartão de crédito, pelo WhatsApp da organização. Depois do pedido você terá <b>30 minutos</b> para pagar e enviar o comprovante.</div>
     <p class="err" id="err" hidden></p>
     <div class="dup" id="dup" hidden></div>
     <input id="c-site" name="site" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
@@ -506,6 +506,7 @@ function pixCode(valor,txid){const p=emv("00","01")+emv("26",emv("00","br.gov.bc
 function modoPagamento(){
   $("pb-box").hidden=!PAGBANK;$("ou").hidden=!(PAGBANK&&PIXDIRETO);
   $("manual").hidden=PAGBANK&&!PIXDIRETO;$("cartao-box").hidden=PAGBANK;
+  $("formas").innerHTML=PAGBANK?'<b>Como pagar:</b> na próxima tela, toque em <b>Pagar agora</b> e escolha <b>Pix ou cartão de crédito</b> (até 3x) na página segura da PagBank. A confirmação é automática. Você terá <b>30 minutos</b> para concluir.':'<b>Como pagar:</b> Pix, na próxima tela, ou cartão de crédito, pelo WhatsApp da organização. Depois do pedido você terá <b>30 minutos</b> para pagar e enviar o comprovante.';
   $("t-lbl").textContent=PAGBANK?"Tempo para concluir o pagamento":"Tempo para pagar e enviar o comprovante";
 }
 $("pb-btn").onclick=e=>{
