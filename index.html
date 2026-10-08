@@ -140,6 +140,10 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid
 .pagook b{font-size:24px;font-weight:400;color:var(--ok)}.pagook p{margin:0}
 .confirmando{margin-top:22px;padding:18px;border-radius:16px;background:var(--soft);text-align:center;display:grid;gap:4px}
 .confirmando b{font-weight:500}.confirmando p{margin:0;color:var(--muted);font-size:16px}
+.meupedido{margin-top:18px;padding:14px 18px;border-radius:16px;background:var(--surface);border:1px solid var(--line);display:grid;gap:6px;font-size:17px}
+.meupedido .mp-t{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.linkbtn{display:block;margin:16px auto 0;border:0;background:none;color:var(--muted);font-size:15px;text-decoration:underline;text-underline-offset:3px}
+.pend-itens{color:var(--ink)!important;font-size:16px}
 .hint{font-size:16px;color:var(--muted)}
 .sizes{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:10px}
 .sz{position:relative;height:56px;border:1px solid var(--line);background:var(--surface);border-radius:14px;font-size:20px;font-weight:400;letter-spacing:.02em;transition:background .15s,border-color .15s}
@@ -284,6 +288,7 @@ table.mx{border-collapse:collapse;width:100%;font-size:16px;font-variant-numeric
     <div class="num" id="o-num">Nº 106</div>
     <p style="margin:0">Valor a pagar: <b id="o-val" style="color:var(--gold)">R$ 139,80</b></p>
   </div>
+  <div class="meupedido" id="meupedido" hidden></div>
   <div id="live">
     <div class="timer" id="timer"><span id="t-lbl">Tempo para pagar e enviar o comprovante</span><b id="t-left">30:00</b></div>
     <div class="pb" id="pb-box" hidden>
@@ -317,8 +322,13 @@ table.mx{border-collapse:collapse;width:100%;font-size:16px;font-variant-numeric
   <div class="duvidas"><span>Dúvidas? Fale no WhatsApp</span><a href="https://wa.me/5583991660374" target="_blank" rel="noopener">(83) 9 9166-0374</a></div>
   <button class="btn ghost full" id="again" style="margin-top:6px">Fazer outro pedido</button>
   <div class="confirma" id="again-confirm" hidden>
-    <p>Você já enviou o comprovante do pedido <b id="ac-num">nº 106</b>? Sem ele, o pedido será cancelado.</p>
+    <p id="ac-txt">Você já enviou o comprovante do pedido <b id="ac-num">nº 106</b>? Sem ele, o pedido será cancelado.</p>
     <div class="row2"><button class="btn ghost" id="ac-no">Ainda não, voltar</button><button class="btn" id="ac-yes">Sim, já enviei</button></div>
+  </div>
+  <button class="linkbtn" id="cancelar" hidden>Escolheu errado? Cancelar este pedido e refazer</button>
+  <div class="confirma" id="cancel-confirm" hidden>
+    <p>Cancelar o pedido <b id="cc-num">nº 106</b>? As camisas voltam para o seu carrinho para você ajustar e fazer um novo pedido. Só cancele se ainda <b>não pagou</b>.</p>
+    <div class="row2"><button class="btn ghost" id="cc-no">Voltar</button><button class="btn" id="cc-yes">Sim, cancelar</button></div>
   </div>
 </div></section>
 
@@ -477,12 +487,12 @@ $("f").onsubmit=e=>{
     body:JSON.stringify({acao:"pedido",nome,zap,itens,confirmarRepetido:forcarNovo,site:$("c-site").value})})
   .then(r=>r.json()).then(j=>{
     fim();forcarNovo=false;
-    if(j.ok){const o={id:j.id,nome,zap,status:"pendente",exp:Date.parse(j.expira),valor:j.valor};
+    if(j.ok){const o={id:j.id,nome,zap,status:"pendente",exp:Date.parse(j.expira),valor:j.valor,lista:itens};
       guardar(o);sel={};renderLists();carregarEstoque();openPay(o);return;}
     switch(j.erro){
       case "pendente":
-        dup.innerHTML=`<b>Você já tem o pedido nº ${j.id} aguardando pagamento.</b><p>Para evitar pedidos repetidos, pague e envie o comprovante dele primeiro. Depois, se quiser mais camisas, faça um novo pedido.</p><button type="button" class="btn full" id="ver-pend">Ver o pedido nº ${j.id}</button>`;
-        dup.hidden=false;$("ver-pend").onclick=()=>{const o={id:j.id,nome,zap,status:"pendente",exp:Date.parse(j.expira),valor:j.valor};guardar(o);openPay(o);};break;
+        dup.innerHTML=`<b>Você já tem o pedido nº ${j.id} aguardando pagamento.</b>${j.itens?`<p class="pend-itens">${j.itens.split(" | ").join("<br>")}</p>`:""}<p>Para evitar pedidos repetidos, ${PAGBANK?"conclua o pagamento dele":"pague e envie o comprovante dele"} primeiro. Se escolheu errado, abra o pedido e toque em <b>Cancelar este pedido e refazer</b>.</p><button type="button" class="btn full" id="ver-pend">Ver o pedido nº ${j.id}</button>`;
+        dup.hidden=false;$("ver-pend").onclick=()=>{const o={id:j.id,nome,zap,status:"pendente",exp:Date.parse(j.expira),valor:j.valor,lista:j.lista,itensTxt:j.itens};guardar(o);openPay(o);};break;
       case "repetido":
         dup.innerHTML=`<b>Você já fez um pedido igual a este (nº ${j.id}).</b><p>Se foi sem querer, não precisa fazer de novo. Se quer mesmo comprar outra vez as mesmas camisas, confirme abaixo.</p><button type="button" class="btn ghost full" id="forcar">Sim, quero um novo pedido igual</button>`;
         dup.hidden=false;$("forcar").onclick=()=>{forcarNovo=true;dup.hidden=true;$("f").requestSubmit();};break;
@@ -507,6 +517,8 @@ function modoPagamento(){
   $("pb-box").hidden=!PAGBANK;$("ou").hidden=!(PAGBANK&&PIXDIRETO);
   $("manual").hidden=PAGBANK&&!PIXDIRETO;$("cartao-box").hidden=PAGBANK;
   $("formas").innerHTML=PAGBANK?'<b>Como pagar:</b> na próxima tela, toque em <b>Pagar agora</b> e escolha <b>Pix ou cartão de crédito</b> (até 3x) na página segura da PagBank. A confirmação é automática. Você terá <b>30 minutos</b> para concluir.':'<b>Como pagar:</b> Pix, na próxima tela, ou cartão de crédito, pelo WhatsApp da organização. Depois do pedido você terá <b>30 minutos</b> para pagar e enviar o comprovante.';
+  $("ac-txt").innerHTML=PAGBANK?'Você já concluiu o pagamento do pedido <b id="ac-num">nº '+(cur?cur.id:"")+'</b>? Sem pagamento, ele é cancelado quando o tempo acabar.':'Você já enviou o comprovante do pedido <b id="ac-num">nº '+(cur?cur.id:"")+'</b>? Sem ele, o pedido será cancelado.';
+  $("ac-yes").textContent=PAGBANK?"Sim, já paguei":"Sim, já enviei";
   $("t-lbl").textContent=PAGBANK?"Tempo para concluir o pagamento":"Tempo para pagar e enviar o comprovante";
 }
 $("pb-btn").onclick=e=>{
@@ -519,6 +531,28 @@ $("pb-btn").onclick=e=>{
     else toast(PIXDIRETO?"A PagBank não respondeu. Tente de novo ou use o Pix direto.":"A PagBank não respondeu. Tente de novo em instantes.");
   }).catch(()=>{volta();toast("Sem conexão. Confira a internet e tente de novo.");});
 };
+function renderMeuPedido(){
+  const box=$("meupedido");if(!cur){box.hidden=true;return;}
+  let linhas="";
+  if(cur.lista&&cur.lista.length)linhas=cur.lista.map(i=>{const[l,s]=i.k.split("|");return lineById(l)?`<div class="row"><span>${i.q} × ${itemNome(l,s)}</span></div>`:"";}).join("");
+  else if(cur.itensTxt)linhas=cur.itensTxt.split(" | ").map(t=>`<div class="row"><span>${t}</span></div>`).join("");
+  box.hidden=!linhas;box.innerHTML=`<span class="mp-t">Camisas deste pedido</span>${linhas}`;
+  const podeCancelar=cur.status==="pendente"&&!expirado(cur)&&!!cur.zap&&!cur.voltou;
+  $("cancelar").hidden=!podeCancelar;if(!podeCancelar)$("cancel-confirm").hidden=true;
+}
+$("cancelar").onclick=()=>{$("cc-num").textContent="nº "+cur.id;$("cancel-confirm").hidden=false;$("cancel-confirm").scrollIntoView({behavior:"smooth",block:"center"});};
+$("cc-no").onclick=()=>{$("cancel-confirm").hidden=true;};
+$("cc-yes").onclick=()=>{
+  const b=$("cc-yes");b.disabled=true;b.textContent="Cancelando...";
+  fetch(API+"?acao=cancelar&id="+cur.id+"&zap="+encodeURIComponent(cur.zap)).then(r=>r.json()).then(j=>{
+    b.disabled=false;b.textContent="Sim, cancelar";
+    if(j.ok){
+      const lista=j.lista||cur.lista||[];esquecer();cur=null;$("cancel-confirm").hidden=true;
+      carregarEstoque().then(()=>{sel={};lista.forEach(i=>{const d=DISP?(DISP[i.k]??0):i.q;const q=Math.min(i.q,d);if(q>0)sel[i.k]=q;});renderLists();renderBar();show("loja");toast("Pedido cancelado. Suas camisas voltaram para o carrinho.");});
+    }else if(j.erro==="status"){$("cancel-confirm").hidden=true;consultarStatus();toast("Este pedido já foi pago ou atualizado e não pode ser cancelado.");}
+    else toast("Não foi possível cancelar agora. Tente de novo em instantes.");
+  }).catch(()=>{b.disabled=false;b.textContent="Sim, cancelar";toast("Sem conexão. Tente de novo.");});
+};
 function openPay(o){
   cur=o;const tot=Number(o.valor),val=brl(tot);
   $("key").textContent=pixCode(tot,"ENCHEIVOS"+o.id);
@@ -527,7 +561,7 @@ function openPay(o){
   $("zapbtn").href="https://wa.me/5583991660374?text="+encodeURIComponent(msg);
   $("cardbtn").href="https://wa.me/5583991660374?text="+encodeURIComponent(`Olá! Quero pagar no cartão de crédito o pedido nº ${o.id} – ${val} – ${o.nome}.`);
   $("sent").hidden=!o.enviou;$("again-confirm").hidden=true;
-  show("pagar");tickPay();
+  $("cancel-confirm").hidden=true;show("pagar");tickPay();renderMeuPedido();
 }
 function tickPay(){
   if(!cur||$("v-pagar").hidden)return;
@@ -547,11 +581,12 @@ function consultarStatus(){
   fetch(API+"?acao=status&id="+cur.id).then(r=>r.json()).then(j=>{
     if(!j.ok)return;
     if(j.valor!=null&&!cur.valor)cur.valor=j.valor;
+    if(j.lista&&j.lista.length)cur.lista=j.lista;if(j.itens)cur.itensTxt=j.itens;
     if(j.status==="Expirado"||j.status==="Cancelado"){cur.status="pendente";cur.exp=0;cur.voltou=false;esquecer();}
     else if(j.status==="Pago"||j.status==="Entregue"){cur.status="pago";cur.voltou=false;esquecer();}
     else if(j.status==="Em análise (PagBank)"){cur.status="analise";cur.voltou=false;}
     else if(j.status==="Comprovante recebido"){cur.status="comprovante";esquecer();}
-    tickPay();renderRetomar();
+    tickPay();renderRetomar();renderMeuPedido();
   }).catch(()=>{});
 }
 setInterval(consultarStatus,30000);
