@@ -257,6 +257,24 @@ body::after{width:170px;height:255px;left:-55px;bottom:6vh;transform:rotate(-14d
 .price b{background:linear-gradient(90deg,#3a0a06,#c4301c);-webkit-background-clip:text;background-clip:text;color:transparent}
 .offer .cond{letter-spacing:.1em;font-size:13px}
 .card{box-shadow:0 8px 28px rgba(58,10,6,.07);border-color:#f0dcd2}
+
+/* tamanhos sempre cabem na tela, sem rolagem lateral */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{overflow-x:hidden;max-width:100%}
+.sizes{grid-template-columns:repeat(var(--n,5),minmax(0,1fr))}
+.sz{min-width:0;padding:0;overflow:visible}
+.sz small{white-space:nowrap;font-size:9.5px;letter-spacing:0}
+@media (max-width:380px){
+  .card .body{padding:16px 14px 20px}
+  .sizes{gap:7px}
+  .sz{font-size:18px;height:52px;border-radius:12px}
+  .sz small{font-size:9px}
+}
+@media (max-width:340px){
+  .sizes{gap:5px}
+  .sz{font-size:16px;height:50px}
+  .sz small{font-size:8.5px}
+}
 </style>
 </head>
 <body>
