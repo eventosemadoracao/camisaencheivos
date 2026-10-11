@@ -95,6 +95,7 @@ table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
   .peds .c-vl{grid-column:3;grid-row:2;font-weight:500}
   .peds .c-zp{grid-row:2;grid-column:1/3}
 }
+#usuario{font:inherit;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff}
 .acs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .ac{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
 .ac.ok{border-color:#3f8a57;color:#2f6e44;background:#eef7f1}
@@ -117,6 +118,7 @@ table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 <section class="login" id="login">
   <h2>Acesso da organização</h2>
   <form id="lf"><div style="display:grid;gap:12px">
+    <label for="usuario">Quem está acessando</label><select id="usuario"><option value="">Escolha seu nome</option><option>João Felix</option><option>Gabi Neves</option><option>Monique Serrano</option></select>
     <label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password">
     <p class="err" id="lerr" hidden></p><button class="btn" type="submit" id="lbtn">Entrar</button></div></form>
 </section>
@@ -147,24 +149,24 @@ const esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const brl=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const SIZES=["PP","P","M","G","GG","EGG","2","4","6","8","10"];
 const PAGO=["Pago","Entregue"],RES=["Aguardando","Em análise (PagBank)","Comprovante recebido"];
-let senha=null,D=null,filtro="ativos",busca="";
-try{senha=sessionStorage.getItem("painel_senha");}catch(e){}
+let senha=null,usuario=null,D=null,filtro="ativos",busca="";
+try{senha=sessionStorage.getItem("painel_senha");usuario=sessionStorage.getItem("painel_usuario");}catch(e){}
 
 function carregar(){
-  return fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({acao:"painel",senha})})
+  return fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({acao:"painel",usuario,senha})})
   .then(r=>r.json()).then(j=>{
-    if(!j.ok){sairTela(j.erro==="bloqueado"?"Muitas tentativas. Aguarde 10 minutos.":"Senha incorreta.");return;}
+    if(!j.ok){sairTela(j.erro==="bloqueado"?"Muitas tentativas. Aguarde 10 minutos.":"Nome ou senha incorretos.");return;}
     D=j;$("login").hidden=true;$("app").hidden=false;$("acts").hidden=false;render();
-    $("upd").textContent="Atualizado às "+new Date(j.agora).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    $("upd").textContent=usuario+" · atualizado às "+new Date(j.agora).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   }).catch(()=>{$("upd").textContent="Sem conexão. Tentando de novo...";});
 }
 function sairTela(msg){$("app").hidden=true;$("acts").hidden=true;$("login").hidden=false;$("lbtn").disabled=false;$("lbtn").textContent="Entrar";
-  if(msg){$("lerr").textContent=msg;$("lerr").hidden=false;}try{sessionStorage.removeItem("painel_senha");}catch(e){}senha=null;}
-$("lf").onsubmit=e=>{e.preventDefault();senha=$("senha").value;$("lerr").hidden=true;$("lbtn").disabled=true;$("lbtn").textContent="Entrando...";
+  if(msg){$("lerr").textContent=msg;$("lerr").hidden=false;}try{sessionStorage.removeItem("painel_senha");sessionStorage.removeItem("painel_usuario");}catch(e){}senha=null;usuario=null;}
+$("lf").onsubmit=e=>{e.preventDefault();usuario=$("usuario").value;if(!usuario){$("lerr").textContent="Escolha seu nome.";$("lerr").hidden=false;return;}senha=$("senha").value;try{sessionStorage.setItem("painel_usuario",usuario);}catch(e){}$("lerr").hidden=true;$("lbtn").disabled=true;$("lbtn").textContent="Entrando...";
   try{sessionStorage.setItem("painel_senha",senha);}catch(e){}carregar();};
 $("sair").onclick=()=>sairTela();$("refresh").onclick=()=>carregar();$("print").onclick=()=>window.print();
 setInterval(()=>{if(senha&&!$("app").hidden)carregar();},60000);
-if(senha)carregar();
+if(senha&&usuario)carregar();
 
 function render(){
   const P=D.pedidos,G=D.grade;
@@ -223,7 +225,7 @@ document.addEventListener("click",e=>{
     :st==="Entregue"?`Marcar o pedido nº ${p.id} (${p.nome}) como ENTREGUE?`:`Mudar o pedido nº ${p.id} para "${st}"?`;
   if(!confirm(txt))return;
   bt.disabled=true;bt.textContent="Salvando...";
-  fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({acao:"baixa",senha,id:p.id,status:st,forma:f})})
+  fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({acao:"baixa",usuario,senha,id:p.id,status:st,forma:f})})
    .then(r=>r.json()).then(j=>{
      if(j.ok&&j.pedidos){D=j;render();$("upd").textContent="Salvo às "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});return;}
      alert(j.erro==="estoque"?"Não dá para reativar: essas camisas já foram vendidas para outra pessoa.":j.erro==="senha"||j.erro==="bloqueado"?"Sessão expirada. Entre de novo.":"Não foi possível salvar agora. Tente de novo.");
