@@ -138,7 +138,7 @@ table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
   <section class="card" id="sec-peds"><h2>Pedidos</h2>
     <div class="filters" id="filtros"></div>
     <div class="scroll"><table class="peds" id="peds"></table></div></section>
-  <section class="card" id="sec-sep"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h2>Lista de separação (pedidos pagos)</h2><button class="chip" id="print">Imprimir lista</button></div>
+  <section class="card" id="sec-sep"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h2>Lista de separação (pedidos pagos)</h2><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="chip" id="exportar">Baixar camisas pagas (Excel)</button><button class="chip" id="print">Imprimir lista</button></span></div>
     <div class="sep" id="sep"></div></section>
 </main>
 
@@ -164,7 +164,27 @@ function sairTela(msg){$("app").hidden=true;$("acts").hidden=true;$("login").hid
   if(msg){$("lerr").textContent=msg;$("lerr").hidden=false;}try{sessionStorage.removeItem("painel_senha");sessionStorage.removeItem("painel_usuario");}catch(e){}senha=null;usuario=null;}
 $("lf").onsubmit=e=>{e.preventDefault();usuario=$("usuario").value;if(!usuario){$("lerr").textContent="Escolha seu nome.";$("lerr").hidden=false;return;}senha=$("senha").value;try{sessionStorage.setItem("painel_usuario",usuario);}catch(e){}$("lerr").hidden=true;$("lbtn").disabled=true;$("lbtn").textContent="Entrando...";
   try{sessionStorage.setItem("painel_senha",senha);}catch(e){}carregar();};
-$("sair").onclick=()=>sairTela();$("refresh").onclick=()=>carregar();$("print").onclick=()=>window.print();
+$("sair").onclick=()=>sairTela();
+$("exportar").onclick=()=>{
+  if(!D)return;
+  const pagos=D.pedidos.filter(p=>PAGO.includes(p.status)).sort((a,b)=>a.id-b.id);
+  if(!pagos.length){alert("Ainda não há camisas pagas.");return;}
+  const q=v=>{v=String(v??"");return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const linhas=[["Nº pedido","Data do pedido","Nome","WhatsApp","Modelo","Linha","Tamanho","Cor","Quantidade","Valor total do pedido (R$)","Forma de pagamento","Status","Observações"]];
+  const tot={};
+  pagos.forEach(p=>p.itens.split(" | ").forEach(it=>{
+    const pr=it.split(" · "),m=pr[0].match(/^(\d+)×\s*(.*)$/)||[0,1,pr[0]],lt=(pr[1]||"").trim(),k=lt.lastIndexOf(" ");
+    const linha=k>0?lt.slice(0,k):lt,tam=k>0?lt.slice(k+1):"",cor=pr.slice(2).join(" · "),qt=Number(m[1])||1;
+    linhas.push([p.id,new Date(p.data).toLocaleString("pt-BR"),p.nome,p.zap,m[2],linha,tam,cor,qt,String(p.valor.toFixed(2)).replace(".",","),p.forma||"",p.status,p.obs||""]);
+    const kk=m[2]+" · "+linha+(cor?" · "+cor:"")+"|"+tam;tot[kk]=(tot[kk]||0)+qt;
+  }));
+  linhas.push([],["RESUMO POR MODELO E TAMANHO"],["Modelo · linha · cor","Tamanho","Quantidade"]);
+  Object.keys(tot).sort().forEach(k=>{const [a,t]=k.split("|");linhas.push([a,t,tot[k]]);});
+  linhas.push(["Total de camisas pagas","",Object.values(tot).reduce((a,b)=>a+b,0)]);
+  const csv="\ufeff"+linhas.map(l=>l.map(q).join(";")).join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  a.download="camisas-pagas-"+new Date().toLocaleDateString("pt-BR").replace(/\//g,"-")+".csv";document.body.appendChild(a);a.click();a.remove();
+};$("refresh").onclick=()=>carregar();$("print").onclick=()=>window.print();
 setInterval(()=>{if(senha&&!$("app").hidden)carregar();},60000);
 if(senha&&usuario)carregar();
 
