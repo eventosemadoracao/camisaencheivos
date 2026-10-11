@@ -575,7 +575,10 @@ function pixCode(valor,txid){const p=emv("00","01")+emv("26",emv("00","br.gov.bc
 function modoPagamento(){
   $("pb-box").hidden=!PAGBANK;$("ou").hidden=!(PAGBANK&&PIXDIRETO);
   $("manual").hidden=PAGBANK&&!PIXDIRETO;$("cartao-box").hidden=PAGBANK;
-  $("formas").innerHTML=PAGBANK?'<b>Como pagar:</b> na próxima tela, toque em <b>Pagar agora</b> e escolha <b>Pix ou cartão de crédito</b> (até 3x) na página segura da PagBank. A confirmação é automática. Você terá <b>30 minutos</b> para concluir.':'<b>Como pagar:</b> Pix ou cartão de crédito, na próxima tela. Depois do pedido você terá <b>30 minutos</b> para pagar e enviar o comprovante.';
+  $("formas").innerHTML=PAGBANK?'<b>Como pagar:</b> na próxima tela, toque em <b>Pagar agora</b> e escolha <b>Pix ou cartão de crédito</b> (até 3x) na página segura da PagBank. A confirmação é automática. Você terá <b>30 minutos</b> para concluir.':'<b>Como pagar:</b> Pix ou cartão de crédito, na próxima tela. Depois de pagar, envie o <b>comprovante pelo WhatsApp</b> para confirmarmos seu pedido.';
+  $("timer").hidden=!PAGBANK;
+  const al=document.querySelector("#live .alerta");if(al)al.innerHTML=PAGBANK?'<b>Atenção:</b> conclua o pagamento dentro do prazo. Se o tempo acabar, o pedido é cancelado e as camisas voltam para a venda.':'<b>Atenção:</b> seu pedido só é confirmado depois que você <b>enviar o comprovante no WhatsApp</b>. Sua reserva fica guardada até a nossa equipe conferir o pagamento.';
+  const ci=document.querySelector("#cartao-box > p");if(ci)ci.innerHTML='<b>Prefere pagar no cartão de crédito?</b><br>Siga os passos abaixo.';
   $("ac-txt").innerHTML=PAGBANK?'Você já concluiu o pagamento do pedido <b id="ac-num">nº '+(cur?cur.id:"")+'</b>? Sem pagamento, ele é cancelado quando o tempo acabar.':'Você já enviou o comprovante do pedido <b id="ac-num">nº '+(cur?cur.id:"")+'</b>? Sem ele, o pedido será cancelado.';
   $("ac-yes").textContent=PAGBANK?"Sim, já paguei":"Sim, já enviei";
   $("t-lbl").textContent=PAGBANK?"Tempo para concluir o pagamento":"Tempo para pagar e enviar o comprovante";
