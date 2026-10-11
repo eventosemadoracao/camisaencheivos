@@ -100,6 +100,9 @@ table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 .ac{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
 .ac.ok{border-color:#3f8a57;color:#2f6e44;background:#eef7f1}
 .ac.x{color:var(--muted)}
+.ac.zap{border-color:#25a35a;background:#25a35a;color:#fff;text-decoration:none;display:inline-block}
+.ac.pulse{animation:pulse 1.2s ease-in-out 3}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(37,163,90,.25)}}
 .ac:disabled{opacity:.5}
 .obs{display:block;margin-top:6px;font-size:12px;color:var(--muted);max-width:240px}
 .pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13px;border:1px solid;white-space:nowrap}
@@ -229,11 +232,17 @@ function render(){
   // separação
   $("sep").innerHTML=pagos.length?pagos.slice().sort((a,b)=>a.nome.localeCompare(b.nome)).map(p=>`<div><b>${p.nome}</b> · nº ${p.id} <small>(${p.status})</small><br>${p.itens.split(" | ").join("<br>")}</div>`).join(""):`<p class="note">Os pedidos pagos aparecem aqui, em ordem alfabética, prontos para separar e entregar.</p>`;
 }
+function zapConf(p){
+  const nome=String(p.nome||"").trim().split(" ")[0];
+  const msg=`Olá, ${nome}! ✅ Pagamento confirmado!\n\nSeu pedido nº ${p.id} das camisas oficiais do Enchei-vos do Espírito 2026 está garantido:\n${p.itens.split(" | ").map(i=>"• "+i).join("\n")}\nValor: ${brl(p.valor)}\n\nAvisaremos por aqui a data e o local de retirada. Deus abençoe! 🙏`;
+  return `<a class="ac zap" href="https://wa.me/55${p.zap}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">📲 Enviar confirmação</a>`;
+}
 function acoes(p){
   const b=(st,f,t,c)=>`<button class="ac ${c||""}" data-id="${p.id}" data-st="${st}" data-f="${f||""}">${t}</button>`;
   if(["Aguardando","Comprovante recebido","Em análise (PagBank)","Expirado"].includes(p.status))
     return `<div class="acs">${b("Pago","pix","✓ Pago no Pix","ok")}${b("Pago","cartao","✓ Pago no cartão","ok")}${p.status!=="Expirado"?b("Cancelado","","Cancelar","x"):""}</div>`;
-  if(p.status==="Pago")return `<div class="acs">${b("Entregue","","Marcar entregue")}${b("Comprovante recebido","","Desfazer","x")}</div>`;
+  if(p.status==="Pago")return `<div class="acs">${zapConf(p)}${b("Entregue","","Marcar entregue")}${b("Comprovante recebido","","Desfazer","x")}</div>`;
+  if(p.status==="Entregue")return `<div class="acs">${zapConf(p)}</div>`;
   if(p.status==="Cancelado")return `<div class="acs">${b("Comprovante recebido","","Reativar","x")}</div>`;
   return "";
 }
@@ -247,7 +256,8 @@ document.addEventListener("click",e=>{
   bt.disabled=true;bt.textContent="Salvando...";
   fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({acao:"baixa",usuario,senha,id:p.id,status:st,forma:f})})
    .then(r=>r.json()).then(j=>{
-     if(j.ok&&j.pedidos){D=j;render();$("upd").textContent="Salvo às "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});return;}
+     if(j.ok&&j.pedidos){D=j;render();$("upd").textContent="Salvo às "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+       if(st==="Pago"){const z=document.querySelector(`.ac.zap[href*="${p.zap}"]`);if(z){z.scrollIntoView({block:"center",behavior:"smooth"});z.classList.add("pulse");}}return;}
      alert(j.erro==="estoque"?"Não dá para reativar: essas camisas já foram vendidas para outra pessoa.":j.erro==="senha"||j.erro==="bloqueado"?"Sessão expirada. Entre de novo.":"Não foi possível salvar agora. Tente de novo.");
      if(j.erro==="senha")sairTela();else carregar();
    }).catch(()=>{alert("Sem conexão. Tente de novo.");carregar();});
