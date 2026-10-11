@@ -118,6 +118,14 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid
 .sent{margin:16px 0 0;padding:12px 16px;border-radius:14px;background:color-mix(in srgb,var(--ok) 12%,var(--surface));color:var(--ink);font-size:16px}
 .cartao{margin-top:22px;padding:16px 18px;border-radius:16px;border:1px dashed var(--line);display:grid;gap:12px}
 .cartao p{margin:0;font-size:16px;color:var(--muted)}.cartao p b{color:var(--ink);font-weight:500}
+.cardsteps{margin:0;padding-left:22px;display:grid;gap:14px}
+.cardsteps li p{margin:0 0 8px}
+.cardval{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--soft);border-radius:12px;padding:10px 12px}
+.cardval b{font-size:24px;font-weight:500;color:var(--ink)}
+.cardval .btn{width:auto;padding:8px 14px;font-size:15px;white-space:nowrap;flex:none}
+.cartao{background:rgba(255,255,255,.88)}
+.cartao .cardsteps a.btn{text-align:center}
+.cardhint{font-size:15px!important;margin-top:8px!important}
 .cartao a.btn{display:grid;place-items:center;text-decoration:none}
 .expirou{margin-top:22px;padding:18px;border-radius:16px;background:var(--soft);display:grid;gap:6px;text-align:center}
 .expirou b{font-size:22px;font-weight:400;color:var(--flame)}.expirou p{margin:0;color:var(--muted)}
@@ -312,7 +320,7 @@ html,body{overflow-x:hidden;max-width:100%}
   <form id="f" novalidate>
     <div class="field"><label for="c-nome">Seu nome</label><input id="c-nome" autocomplete="name" placeholder="Ex.: Maria da Silva"></div>
     <div class="field"><label for="c-zap">Seu WhatsApp</label><input id="c-zap" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="16" placeholder="(83) 9 9999-9999"><span class="dica" id="zap-dica">DDD + número do celular, com o 9 na frente</span></div>
-    <div class="formas" id="formas"><b>Como pagar:</b> Pix, na próxima tela, ou cartão de crédito, pelo WhatsApp da organização. Depois do pedido você terá <b>30 minutos</b> para pagar e enviar o comprovante.</div>
+    <div class="formas" id="formas"><b>Como pagar:</b> Pix ou cartão de crédito, na próxima tela. Depois do pedido você terá <b>30 minutos</b> para pagar e enviar o comprovante.</div>
     <p class="err" id="err" hidden></p>
     <div class="dup" id="dup" hidden></div>
     <input id="c-site" name="site" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
@@ -345,8 +353,12 @@ html,body{overflow-x:hidden;max-width:100%}
     <p class="sent" id="sent" hidden>Obrigado! Assim que conferirmos o pagamento, confirmamos seu pedido pelo WhatsApp. A camisa é entregue no retiro.</p>
     </div>
     <div class="cartao" id="cartao-box">
-      <p><b>Prefere pagar no cartão de crédito?</b><br>O pagamento com cartão é feito com a organização, pelo WhatsApp. Envie a mensagem dentro do mesmo prazo de 30 minutos.</p>
-      <a class="btn ghost full" id="cardbtn" href="#" target="_blank" rel="noopener">Pagar no cartão pelo WhatsApp</a>
+      <p><b>Prefere pagar no cartão de crédito?</b><br>Siga os passos abaixo dentro do mesmo prazo de 30 minutos.</p>
+      <ol class="cardsteps">
+        <li><p>Anote o valor do seu pedido:</p><div class="cardval"><b id="c-val">R$ 69,90</b><button class="btn ghost" id="c-copy" type="button">Copiar valor</button></div><p class="cardhint" id="c-hint"></p></li>
+        <li><p>Toque no botão e pague na página segura do <b>PagBank</b>.</p><a class="btn full" id="cardbtn" href="https://pag.ae/82euk27xR" target="_blank" rel="noopener">Pagar no cartão</a></li>
+        <li class="obrig"><p><b>Obrigatório:</b> envie o comprovante do cartão no WhatsApp. A mensagem já vai pronta com o número do seu pedido.</p><a class="btn ghost full" id="cardzap" href="#" target="_blank" rel="noopener">Enviar comprovante</a></li>
+      </ol>
     </div>
   </div>
   <div class="pagook" id="pago-ok" hidden>
@@ -563,7 +575,7 @@ function pixCode(valor,txid){const p=emv("00","01")+emv("26",emv("00","br.gov.bc
 function modoPagamento(){
   $("pb-box").hidden=!PAGBANK;$("ou").hidden=!(PAGBANK&&PIXDIRETO);
   $("manual").hidden=PAGBANK&&!PIXDIRETO;$("cartao-box").hidden=PAGBANK;
-  $("formas").innerHTML=PAGBANK?'<b>Como pagar:</b> na próxima tela, toque em <b>Pagar agora</b> e escolha <b>Pix ou cartão de crédito</b> (até 3x) na página segura da PagBank. A confirmação é automática. Você terá <b>30 minutos</b> para concluir.':'<b>Como pagar:</b> Pix, na próxima tela, ou cartão de crédito, pelo WhatsApp da organização. Depois do pedido você terá <b>30 minutos</b> para pagar e enviar o comprovante.';
+  $("formas").innerHTML=PAGBANK?'<b>Como pagar:</b> na próxima tela, toque em <b>Pagar agora</b> e escolha <b>Pix ou cartão de crédito</b> (até 3x) na página segura da PagBank. A confirmação é automática. Você terá <b>30 minutos</b> para concluir.':'<b>Como pagar:</b> Pix ou cartão de crédito, na próxima tela. Depois do pedido você terá <b>30 minutos</b> para pagar e enviar o comprovante.';
   $("ac-txt").innerHTML=PAGBANK?'Você já concluiu o pagamento do pedido <b id="ac-num">nº '+(cur?cur.id:"")+'</b>? Sem pagamento, ele é cancelado quando o tempo acabar.':'Você já enviou o comprovante do pedido <b id="ac-num">nº '+(cur?cur.id:"")+'</b>? Sem ele, o pedido será cancelado.';
   $("ac-yes").textContent=PAGBANK?"Sim, já paguei":"Sim, já enviei";
   $("t-lbl").textContent=PAGBANK?"Tempo para concluir o pagamento":"Tempo para pagar e enviar o comprovante";
@@ -606,7 +618,10 @@ function openPay(o){
   $("o-num").textContent="Nº "+o.id;$("o-val").textContent=val;$("ac-num").textContent="nº "+o.id;
   const msg=`Olá! Segue o comprovante do pedido nº ${o.id} – ${val} – ${o.nome}.`;
   $("zapbtn").href="https://wa.me/5583991660374?text="+encodeURIComponent(msg);
-  $("cardbtn").href="https://wa.me/5583991660374?text="+encodeURIComponent(`Olá! Quero pagar no cartão de crédito o pedido nº ${o.id} – ${val} – ${o.nome}.`);
+  const pc=Math.max(1,Math.round(tot/PRICE));
+  $("c-val").textContent=val;
+  $("c-hint").innerHTML=`Na página do PagBank, se pedir o <b>valor</b>, digite <b>${val}</b>. Se pedir a <b>quantidade</b>, escolha <b>${pc}</b>.`;
+  $("cardzap").href="https://wa.me/5583991660374?text="+encodeURIComponent(`Olá! Paguei no cartão de crédito o pedido nº ${o.id} – ${val} – ${o.nome}. Segue o comprovante.`);
   $("sent").hidden=!o.enviou;$("again-confirm").hidden=true;
   $("cancel-confirm").hidden=true;show("pagar");tickPay();renderMeuPedido();
 }
@@ -654,6 +669,9 @@ function renderRetomar(){
   $("ret-btn").onclick=()=>{openPay(o);consultarStatus();};
 }
 $("zapbtn").addEventListener("click",()=>{if(cur){cur.enviou=true;$("sent").hidden=false;}});
+$("cardzap").addEventListener("click",()=>{if(cur){cur.enviou=true;$("sent").hidden=false;}});
+$("c-copy").onclick=async()=>{const v=$("c-val").textContent.replace(/[^\d,]/g,"");
+  try{await navigator.clipboard.writeText(v);toast("Valor copiado: R$ "+v);}catch{toast("Valor: R$ "+v);}};
 $("copy").onclick=async()=>{
   try{await navigator.clipboard.writeText($("key").textContent);toast("Código copiado! Agora abra o banco");}
   catch{const r=document.createRange();r.selectNodeContents($("key"));getSelection().removeAllRanges();getSelection().addRange(r);toast("Código selecionado. Toque em Copiar");}
