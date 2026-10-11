@@ -668,8 +668,9 @@ function renderRetomar(){
   box.innerHTML=`<b>Você tem o pedido nº ${o.id} aguardando pagamento.</b><button class="btn full" id="ret-btn">Ver meu pedido e pagar</button>`;
   $("ret-btn").onclick=()=>{openPay(o);consultarStatus();};
 }
-$("zapbtn").addEventListener("click",()=>{if(cur){cur.enviou=true;$("sent").hidden=false;}});
-$("cardzap").addEventListener("click",()=>{if(cur){cur.enviou=true;$("sent").hidden=false;}});
+const avisarEnvio=f=>{if(cur&&typeof API!=="undefined")fetch(API+"?acao=enviou&id="+cur.id+"&zap="+encodeURIComponent(cur.zap||"")+"&forma="+f).catch(()=>{});};
+$("zapbtn").addEventListener("click",()=>{if(cur){cur.enviou=true;$("sent").hidden=false;avisarEnvio("pix");}});
+$("cardzap").addEventListener("click",()=>{if(cur){cur.enviou=true;$("sent").hidden=false;avisarEnvio("cartao");}});
 $("c-copy").onclick=async()=>{const v=$("c-val").textContent.replace(/[^\d,]/g,"");
   try{await navigator.clipboard.writeText(v);toast("Valor copiado: R$ "+v);}catch{toast("Valor: R$ "+v);}};
 $("copy").onclick=async()=>{
