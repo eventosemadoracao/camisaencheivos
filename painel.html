@@ -101,6 +101,7 @@ table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 .ac.ok{border-color:#3f8a57;color:#2f6e44;background:#eef7f1}
 .ac.x{color:var(--muted)}
 .ac.zap{border-color:#25a35a;background:#25a35a;color:#fff;text-decoration:none;display:inline-block}
+.ac.cob{border-color:#c98a1b;background:#fff6e5;color:#8a5a00;text-decoration:none;display:inline-block}
 .ac.pulse{animation:pulse 1.2s ease-in-out 3}
 @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(37,163,90,.25)}}
 .ac:disabled{opacity:.5}
@@ -232,6 +233,11 @@ function render(){
   // separação
   $("sep").innerHTML=pagos.length?pagos.slice().sort((a,b)=>a.nome.localeCompare(b.nome)).map(p=>`<div><b>${p.nome}</b> · nº ${p.id} <small>(${p.status})</small><br>${p.itens.split(" | ").join("<br>")}</div>`).join(""):`<p class="note">Os pedidos pagos aparecem aqui, em ordem alfabética, prontos para separar e entregar.</p>`;
 }
+function zapCobra(p){
+  const nome=String(p.nome||"").trim().split(" ")[0];
+  const msg=`Olá, ${nome}! 😊\n\nRecebemos seu pedido nº ${p.id} das camisas do Enchei-vos:\n${p.itens.split(" | ").map(i=>"• "+i).join("\n")}\nValor: ${brl(p.valor)}\n\nMas ainda *não recebemos o comprovante*. Se você já pagou, é só enviar a foto do comprovante aqui. 🙏\n\nSe ainda não pagou:\n• Pix: eventos@emadoracao.org (Em Adoração)\n• Cartão: encheivos.com.br/camisas\n\nA pré-venda vai só até 14/10.`;
+  return `<a class="ac cob" href="https://wa.me/55${p.zap}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">📲 Pedir comprovante</a>`;
+}
 function zapConf(p){
   const nome=String(p.nome||"").trim().split(" ")[0];
   const msg=`Olá, ${nome}! ✅ Pagamento confirmado!\n\nSeu pedido nº ${p.id} das camisas oficiais do Enchei-vos do Espírito 2026 está garantido:\n${p.itens.split(" | ").map(i=>"• "+i).join("\n")}\nValor: ${brl(p.valor)}\n\nAvisaremos por aqui a data e o local de retirada. Deus abençoe! 🙏`;
@@ -240,7 +246,7 @@ function zapConf(p){
 function acoes(p){
   const b=(st,f,t,c)=>`<button class="ac ${c||""}" data-id="${p.id}" data-st="${st}" data-f="${f||""}">${t}</button>`;
   if(["Aguardando","Comprovante recebido","Em análise (PagBank)","Expirado"].includes(p.status))
-    return `<div class="acs">${b("Pago","pix","✓ Pago no Pix","ok")}${b("Pago","cartao","✓ Pago no cartão","ok")}${p.status!=="Expirado"?b("Cancelado","","Cancelar","x"):""}</div>`;
+    return `<div class="acs">${p.status==="Aguardando"?zapCobra(p):""}${b("Pago","pix","✓ Pago no Pix","ok")}${b("Pago","cartao","✓ Pago no cartão","ok")}${p.status!=="Expirado"?b("Cancelado","","Cancelar","x"):""}</div>`;
   if(p.status==="Pago")return `<div class="acs">${zapConf(p)}${b("Entregue","","Marcar entregue")}${b("Comprovante recebido","","Desfazer","x")}</div>`;
   if(p.status==="Entregue")return `<div class="acs">${zapConf(p)}</div>`;
   if(p.status==="Cancelado")return `<div class="acs">${b("Comprovante recebido","","Reativar","x")}</div>`;
